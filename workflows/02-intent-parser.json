@@ -1,0 +1,119 @@
+{
+  "name": "Desktop - Intent Parser",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "desktop/intent",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "node-webhook-intent",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "desktop/intent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const secret = process.env.DESKTOP_AGS_TOKEN;\nif (!secret || typeof secret !== 'string' || secret.length < 32) {\n  throw new Error('Unauthorized: Config error');\n}\nconst headers = $json.headers || {};\nconst auth = headers['authorization'] || '';\nif (auth !== `Bearer ${secret}`) {\n  throw new Error('Unauthorized: Invalid or missing token');\n}\nreturn [{ json: $json.body || {} }];"
+      },
+      "id": "node-check-auth",
+      "name": "Check Auth",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ process.env.GEMINI_API_KEY }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Parse natural language user prompt into structured JSON payload matching Whitelist schema. ALWAYS output JSON with root key 'actions': Array<{ action: string, args: object }>\\nUser Prompt: '\" + ($json.prompt || '') + \"'\\n\\nAllowed Actions & Args Schema:\\n- focus_workspace: { index: number (1-10) }\\n- move_window_to_workspace: { index: number (1-10) }\\n- launch_app: { app_name: 'code'|'firefox'|'foot'|'obsidian'|'telegram' }\\n- set_volume: { level: number (0-100) }\\n- set_brightness: { level: number (0-100) }\\n- query_jarvis_brain: { query: string }\\n- system_power: { mode: 'lock'|'suspend'|'reboot'|'shutdown' }\\n\\nOutput ONLY valid JSON matching: { \\\"actions\\\": [ { \\\"action\\\": \\\"...\\\", \\\"args\\\": { ... } } ] }\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\"\n  }\n}",
+        "options": {}
+      },
+      "id": "node-gemini-intent",
+      "name": "Gemini Intent Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        690,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const whitelist = {\n  'focus_workspace': (args) => typeof args.index === 'number' && args.index >= 1 && args.index <= 10,\n  'move_window_to_workspace': (args) => typeof args.index === 'number' && args.index >= 1 && args.index <= 10,\n  'launch_app': (args) => ['code','firefox','foot','obsidian','telegram'].includes(args.app_name),\n  'set_volume': (args) => typeof args.level === 'number' && args.level >= 0 && args.level <= 100,\n  'set_brightness': (args) => typeof args.level === 'number' && args.level >= 0 && args.level <= 100,\n  'query_jarvis_brain': (args) => typeof args.query === 'string' && args.query.length > 0,\n  'system_power': (args) => ['lock','suspend','reboot','shutdown'].includes(args.mode)\n};\n\nlet validActions = [];\ntry {\n  const text = $json.candidates[0].content.parts[0].text;\n  const parsed = JSON.parse(text);\n  const actionsArr = Array.isArray(parsed.actions) ? parsed.actions : [];\n  \n  for (const item of actionsArr) {\n    if (item && item.action && whitelist[item.action]) {\n      if (whitelist[item.action](item.args || {})) {\n        validActions.push({ action: item.action, args: item.args });\n      }\n    }\n  }\n} catch (e) {\n  console.warn(\"Intent parsing error:\", e);\n}\n\nreturn [{ json: { actions: validActions } }];"
+      },
+      "id": "node-whitelist-validator",
+      "name": "Whitelist Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        910,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth": {
+      "main": [
+        [
+          {
+            "node": "Gemini Intent Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Intent Call": {
+      "main": [
+        [
+          {
+            "node": "Whitelist Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

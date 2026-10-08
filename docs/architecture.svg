@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="600" fill="#0b0b0e"/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5a5a66"/></marker>
+  </defs>
+  <g fill="none" stroke="#5a5a66" stroke-width="1.6" marker-end="url(#a)">
+    <path d="M190 165H330"/><path d="M190 280H330"/><path d="M190 395H330"/>
+    <path d="M630 220H760"/><path d="M630 300H760"/><path d="M630 380H760"/>
+    <path d="M480 420V478"/>
+  </g>
+  <g font-size="15" fill="#e8e8ee">
+    <rect x="40" y="130" width="150" height="70" rx="12" fill="#16161c" stroke="#2a2a33"/>
+    <text x="115" y="161" text-anchor="middle" font-weight="600">Telegram</text>
+    <text x="115" y="183" text-anchor="middle" font-size="12" fill="#8a8a96">text · files · voice</text>
+    <rect x="40" y="245" width="150" height="70" rx="12" fill="#16161c" stroke="#2a2a33"/>
+    <text x="115" y="276" text-anchor="middle" font-weight="600">Live voice</text>
+    <text x="115" y="298" text-anchor="middle" font-size="12" fill="#8a8a96">real-time, WebSocket</text>
+    <rect x="40" y="360" width="150" height="70" rx="12" fill="#16161c" stroke="#2a2a33"/>
+    <text x="115" y="391" text-anchor="middle" font-weight="600">Schedules</text>
+    <text x="115" y="413" text-anchor="middle" font-size="12" fill="#8a8a96">cron · webhooks</text>
+
+    <rect x="330" y="110" width="300" height="310" rx="16" fill="#1a0f12" stroke="#ff2e4d" stroke-width="1.5"/>
+    <text x="480" y="150" text-anchor="middle" font-size="20" font-weight="700" fill="#ff4d66">Jarvis core</text>
+    <text x="480" y="172" text-anchor="middle" font-size="12" fill="#8a8a96">n8n · ~25 workflows · 24/7 on own server</text>
+    <g font-size="13" fill="#c9c9d2">
+      <rect x="355" y="195" width="250" height="40" rx="8" fill="#16161c"/><text x="480" y="220" text-anchor="middle">LLM router: cloud ↔ local GPU</text>
+      <rect x="355" y="245" width="250" height="40" rx="8" fill="#16161c"/><text x="480" y="270" text-anchor="middle">Tools via MCP</text>
+      <rect x="355" y="295" width="250" height="40" rx="8" fill="#16161c"/><text x="480" y="320" text-anchor="middle">Briefings · scanners · coach</text>
+      <rect x="355" y="345" width="250" height="40" rx="8" fill="#16161c"/><text x="480" y="370" text-anchor="middle">Night jobs · backups</text>
+    </g>
+
+    <rect x="760" y="190" width="160" height="60" rx="12" fill="#16161c" stroke="#2a2a33"/>
+    <text x="840" y="226" text-anchor="middle" font-weight="600">Claude · Gemini</text>
+    <rect x="760" y="270" width="160" height="60" rx="12" fill="#16161c" stroke="#2a2a33"/>
+    <text x="840" y="306" text-anchor="middle" font-weight="600">Ollama (local)</text>
+    <rect x="760" y="350" width="160" height="60" rx="12" fill="#16161c" stroke="#2a2a33"/>
+    <text x="840" y="386" text-anchor="middle" font-weight="600">Redis · Docker</text>
+
+    <rect x="330" y="480" width="300" height="70" rx="12" fill="#16161c" stroke="#2a2a33"/>
+    <text x="480" y="511" text-anchor="middle" font-weight="600">Long-term memory</text>
+    <text x="480" y="533" text-anchor="middle" font-size="12" fill="#8a8a96">Obsidian knowledge base · ~940 notes</text>
+  </g>
+  <text x="40" y="60" font-size="13" letter-spacing="2" fill="#ff4d66" font-weight="600">JARVIS — PERSONAL AI AGENT</text>
+</svg>

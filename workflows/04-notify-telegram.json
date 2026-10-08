@@ -1,0 +1,189 @@
+{
+  "name": "Desktop - Notify Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "desktop/notify",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-notify",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "desktop/notify"
+    },
+    {
+      "parameters": {
+        "jsCode": "const secret = process.env.DESKTOP_AGS_TOKEN;\nif (!secret || typeof secret !== 'string' || secret.length < 32) {\n  return [{ json: { authorized: false, reason: 'Config error' } }];\n}\nconst headers = $json.headers || {};\nconst auth = headers['authorization'] || '';\nif (auth !== `Bearer ${secret}`) {\n  return [{ json: { authorized: false, reason: 'Invalid token' } }];\n}\nreturn [{ json: { authorized: true, body: $json.body } }];"
+      },
+      "id": "node-check-auth",
+      "name": "Check Auth",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.authorized }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-if-authorized",
+      "name": "If Authorized",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        690,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"Unauthorized: Invalid or missing token\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "node-respond-401",
+      "name": "Respond 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        910,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $json.body || {};\nconst level = b.level || 'info';\nconst emojiMap = { 'alert': '🚨', 'warning': '⚠️', 'info': 'ℹ️' };\nconst icon = emojiMap[level] || 'ℹ️';\nconst title = b.title ? `<b>${b.title}</b>\\n` : '';\nconst msg = b.message || 'System notification';\nconst formattedText = `${icon} ${title}${msg}`;\nreturn [{ json: { text: formattedText, chatId: process.env.OWNER_CHAT_ID } }];"
+      },
+      "id": "node-format-notify",
+      "name": "Format Telegram HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        910,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "node-telegram-send",
+      "name": "Send Telegram Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1130,
+        180
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"success\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-200",
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth": {
+      "main": [
+        [
+          {
+            "node": "If Authorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Authorized": {
+      "main": [
+        [
+          {
+            "node": "Format Telegram HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Telegram HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

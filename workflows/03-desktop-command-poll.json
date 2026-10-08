@@ -1,0 +1,249 @@
+{
+  "name": "Desktop - Command Poll",
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": true
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "desktop/poll",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-poll",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "desktop/poll"
+    },
+    {
+      "parameters": {
+        "jsCode": "const secret = process.env.DESKTOP_AGS_TOKEN;\nif (!secret || typeof secret !== 'string' || secret.length < 32) {\n  return [{ json: { authorized: false, reason: 'Config error' } }];\n}\nconst headers = $json.headers || {};\nconst auth = headers['authorization'] || '';\nif (auth !== `Bearer ${secret}`) {\n  return [{ json: { authorized: false, reason: 'Invalid token' } }];\n}\nreturn [{ json: { authorized: true } }];"
+      },
+      "id": "node-check-auth",
+      "name": "Check Auth",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.authorized }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-if-authorized",
+      "name": "If Authorized",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        690,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"Unauthorized: Invalid or missing token\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "node-respond-401",
+      "name": "Respond 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        910,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pop",
+        "key": "desktop_cmd_queue",
+        "options": {
+          "timeout": 50
+        }
+      },
+      "id": "node-redis-blpop",
+      "name": "Redis BLPOP",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        910,
+        180
+      ],
+      "credentials": {
+        "redis": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $json;\nif (!item || !item.value) {\n  return [{ json: { empty: true } }];\n}\ntry {\n  const cmdObj = typeof item.value === 'string' ? JSON.parse(item.value) : item.value;\n  return [{ json: { empty: false, data: cmdObj } }];\n} catch (e) {\n  return [{ json: { empty: true } }];\n}"
+      },
+      "id": "node-parse-item",
+      "name": "Parse Queue Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1130,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.empty }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "node-if-item",
+      "name": "If Command Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1350,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.data) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-200",
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1570,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "",
+        "options": {
+          "responseCode": 204
+        }
+      },
+      "id": "node-respond-204",
+      "name": "Respond 204 No Content",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1570,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth": {
+      "main": [
+        [
+          {
+            "node": "If Authorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Authorized": {
+      "main": [
+        [
+          {
+            "node": "Redis BLPOP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis BLPOP": {
+      "main": [
+        [
+          {
+            "node": "Parse Queue Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Queue Item": {
+      "main": [
+        [
+          {
+            "node": "If Command Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Command Found": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 204 No Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
